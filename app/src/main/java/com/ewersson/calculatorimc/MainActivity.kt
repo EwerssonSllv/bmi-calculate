@@ -10,81 +10,115 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var result: TextView
+    private lateinit var weightUnitSpinner: Spinner
+    private lateinit var heightUnitSpinner: Spinner
+
     @SuppressLint("SetTextI18n", "DefaultLocale")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        setupEdgeToEdge()
+        initializeViews()
+        setupSpinners()
+        setupCalculateButton()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        showLoadingScreen()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateUI()
+    }
+
+    private fun setupEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
 
-        val btnCalculate: Button = findViewById(R.id.btn_calculate)
-        val result: TextView = findViewById(R.id.result)
+    private fun initializeViews() {
+        result = findViewById(R.id.result)
+        weightUnitSpinner = findViewById(R.id.weight_unit)
+        heightUnitSpinner = findViewById(R.id.height_unit)
+    }
 
-        val weightUnitSpinner: Spinner = findViewById(R.id.weight_unit)
-        val heightUnitSpinner: Spinner = findViewById(R.id.height_unit)
-
+    private fun setupSpinners() {
         val weightUnits = arrayOf("kg", "lb")
         val heightUnits = arrayOf("cm", "inches")
-
         weightUnitSpinner.adapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, weightUnits)
         heightUnitSpinner.adapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, heightUnits)
+    }
 
-        btnCalculate.setOnClickListener {
+    private fun setupCalculateButton() {
+        val btnCalculate: Button = findViewById(R.id.btn_calculate)
+        btnCalculate.setOnClickListener { calculateBMI() }
+    }
 
-            val height = findViewById<EditText>(R.id.height).text.toString().replace(",", ".")
-                .toFloatOrNull()
-            val weight = findViewById<EditText>(R.id.weight).text.toString().replace(",", ".")
-                .toFloatOrNull()
+    @SuppressLint("DefaultLocale")
+    private fun calculateBMI() {
+        val height = findViewById<EditText>(R.id.height).text.toString().replace(",", ".").toFloatOrNull()
+        val weight = findViewById<EditText>(R.id.weight).text.toString().replace(",", ".").toFloatOrNull()
+        val selectedWeightUnit = weightUnitSpinner.selectedItem.toString()
+        val selectedHeightUnit = heightUnitSpinner.selectedItem.toString()
 
-            val selectedWeightUnit = weightUnitSpinner.selectedItem.toString()
-            val selectedHeightUnit = heightUnitSpinner.selectedItem.toString()
+        if (height == null || weight == null) {
+            showError("Please enter valid numbers")
+        } else {
+            val weightInKg = if (selectedWeightUnit == "lb") weight * 0.453592f else weight
+            val heightInMeters = if (selectedHeightUnit == "cm") height / 100f else height * 0.0254f
 
-            if (height == null || weight == null) {
-                result.text = "Please enter valid numbers"
-                result.setTextColor(Color.YELLOW)
+            if (heightInMeters > 0) {
+                val bmi = weightInKg / (heightInMeters * heightInMeters)
+                showBMIResult(bmi)
             } else {
-
-                val weightInKg: Float = if (selectedWeightUnit == "lb") weight
-                    .times(0.453592f) else weight
-
-                val heightInMeters: Float = if (selectedHeightUnit == "cm") height
-                    .div(100f) else height.times(0.0254f)
-
-                if (heightInMeters > 0) {
-                    val bmi = weightInKg / (heightInMeters * heightInMeters)
-
-                    when {
-                        bmi < 18.5 -> {
-                            result.text = String.format("Your BMI is: %.2f and you are underweight", bmi)
-                            result.setTextColor(Color.RED)
-                        }
-                        bmi in 18.5..24.9 -> {
-                            result.text = String.format("Your BMI is: %.2f and your weight is normal", bmi)
-                            result.setTextColor(Color.GREEN)
-                        }
-                        bmi in 25.0..29.9 -> {
-                            result.text = String.format("Your BMI is: %.2f and you are overweight", bmi)
-                            result.setTextColor(Color.YELLOW)
-                        }
-                        bmi >= 30 -> {
-                            result.text = String.format("Your BMI is: %.2f and you are obese", bmi)
-                            result.setTextColor(Color.RED)
-                        }
-                    }
-                } else {
-                    result.text = "Invalid input. Please enter valid numbers."
-                    result.setTextColor(Color.YELLOW)
-                }
-
-
-            }
+                showError("Invalid input. Please enter valid numbers.")
             }
         }
-
     }
+
+    private fun showBMIResult(bmi: Float) {
+        when {
+            bmi < 18.5 -> {
+                updateResult("Your BMI is: %.2f and you are underweight".format(bmi), Color.RED)
+            }
+            bmi in 18.5..24.9 -> {
+                updateResult("Your BMI is: %.2f and your weight is normal".format(bmi), Color.GREEN)
+            }
+            bmi in 25.0..29.9 -> {
+                updateResult("Your BMI is: %.2f and you are overweight".format(bmi), Color.YELLOW)
+            }
+            bmi >= 30 -> {
+                updateResult("Your BMI is: %.2f and you are obese".format(bmi), Color.RED)
+            }
+        }
+    }
+
+    private fun updateResult(message: String, color: Int) {
+        result.text = message
+        result.setTextColor(color)
+    }
+
+    private fun showError(message: String) {
+        updateResult(message, Color.YELLOW)
+    }
+
+    private fun showLoadingScreen() {
+        Toast.makeText(this, "Loading...", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateUI() {
+        Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
+    }
+
+
+}
