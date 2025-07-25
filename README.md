@@ -70,7 +70,7 @@ onCreate:
 - Minimum SDK: API 21 (Android 5.0)
 - Kotlin: 1.7 or later
 
-##Future Improvements:
+## Future Improvements:
 
 - Add support for more weight and height units.
 - Implement adaptive icons for a better visual experience.
